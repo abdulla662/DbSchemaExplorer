@@ -1,8 +1,8 @@
-﻿window.renderMermaid = () => {
-    if (window.mermaid) {
-        mermaid.initialize({ startOnLoad: false });
-        mermaid.init(undefined, document.querySelectorAll(".mermaid"));
-    } else {
-        console.error("❌ Mermaid.js not loaded.");
-    }
+﻿window.renderMermaid = function () {
+    setTimeout(() => {
+        if (window.mermaid) {
+            mermaid.initialize({ startOnLoad: false });
+            mermaid.init(undefined, ".mermaid");
+        }
+    }, 1000); 
 };

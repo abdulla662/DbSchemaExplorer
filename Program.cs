@@ -1,4 +1,7 @@
 using DbSchemaExplorer.Components;
+using DbSchemaExplorer.DataAcess;
+using DbSchemaExplorer.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace DbSchemaExplorer
 {
@@ -11,6 +14,10 @@ namespace DbSchemaExplorer
             // Add services to the container.
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
+            var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+            builder.Services.AddScoped<DocumentationService>();
 
             var app = builder.Build();
 

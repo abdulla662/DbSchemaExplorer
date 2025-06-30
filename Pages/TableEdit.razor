@@ -1,0 +1,121 @@
+﻿@page "/TableEdit"
+@using Microsoft.AspNetCore.Components.Forms
+@rendermode RenderMode.InteractiveServer
+@inject DbSchemaExplorer.DataAcess.AppDbContext DbContext
+
+<h3>📄 Table Documentation</h3>
+
+@if (!IsConnected)
+{
+    <div class="mb-3">
+        <label>Server Name:</label>
+        <input class="form-control" @bind="ServerName" />
+
+        <label class="mt-2">Database Name:</label>
+        <input class="form-control" @bind="DatabaseName" />
+
+        <label class="mt-2">Password:</label>
+        <input class="form-control" type="password" @bind="Password" />
+
+        <button class="btn btn-primary mt-3" @onclick="ConnectToMySQL">Connect</button>
+
+        <p class="mt-2">Status: @StatusMessage</p>
+    </div>
+}
+else
+{
+    <div class="mb-3">
+        <label>Select Table:</label>
+        <select class="form-control" @bind="SelectedTable" @bind:after="HandleTableChange">
+            <option value="">-- Select Table --</option>
+            @foreach (var table in Tables)
+            {
+                <option value="@table">@table</option>
+            }
+        </select>
+    </div>
+
+    @if (!string.IsNullOrEmpty(SelectedTable))
+    {
+        <EditForm Model="CurrentDocumentation" OnValidSubmit="SaveDocumentation">
+            <div class="mb-3">
+                <label>Notes for table <b>@SelectedTable</b>:</label>
+                <InputTextArea class="form-control" @bind-Value="CurrentDocumentation.Notes" rows="5" />
+            </div>
+            <button class="btn btn-success">💾 Save</button>
+        </EditForm>
+    }
+}
+
+@if (!string.IsNullOrEmpty(StatusMessage))
+{
+    <div class="alert alert-info mt-2">@StatusMessage</div>
+}
+
+@code {
+    string ServerName = "localhost";
+    string DatabaseName = "";
+    string Password = "";
+    bool IsConnected = false;
+    List<string> Tables = new();
+    string SelectedTable = "";
+    TableDocumentation CurrentDocumentation = new();
+    string StatusMessage = "";
+
+    public async Task ConnectToMySQL()
+    {
+        try
+        {
+            StatusMessage = "🚀 Trying to connect...";
+            var connString = $"Server={ServerName};Port=3306;Database={DatabaseName};Uid=blazoruser;Pwd={Password};";
+
+            using var conn = new MySql.Data.MySqlClient.MySqlConnection(connString);
+            await conn.OpenAsync();
+
+            using var cmd = new MySql.Data.MySqlClient.MySqlCommand("SHOW TABLES;", conn);
+            using var reader = await cmd.ExecuteReaderAsync();
+            Tables.Clear();
+
+            while (await reader.ReadAsync())
+                Tables.Add(reader.GetString(0));
+
+            IsConnected = true;
+            StatusMessage = $"✅ Connected! {Tables.Count} tables found.";
+        }
+        catch (Exception ex)
+        {
+            IsConnected = false;
+            StatusMessage = $"❌ Connection failed: {ex.Message}";
+        }
+    }
+
+    private async Task HandleTableChange()
+    {
+        await LoadTableDocumentation();
+    }
+
+    async Task LoadTableDocumentation()
+    {
+        CurrentDocumentation = DbContext.TableDocumentations
+            .FirstOrDefault(d => d.TableName == SelectedTable && d.DatabaseName == DatabaseName)
+            ?? new TableDocumentation { TableName = SelectedTable, DatabaseName = DatabaseName };
+    }
+
+    async Task SaveDocumentation()
+    {
+        var existing = DbContext.TableDocumentations
+            .FirstOrDefault(d => d.TableName == SelectedTable && d.DatabaseName == DatabaseName);
+
+        if (existing != null)
+        {
+            existing.Notes = CurrentDocumentation.Notes;
+        }
+        else
+        {
+            await DbContext.TableDocumentations.AddAsync(CurrentDocumentation);
+        }
+
+        await DbContext.SaveChangesAsync();
+        StatusMessage = "✅ Table notes saved successfully!";
+    }
+}
