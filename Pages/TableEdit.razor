@@ -1,7 +1,7 @@
 ﻿@page "/TableEdit"
 @using Microsoft.AspNetCore.Components.Forms
 @rendermode RenderMode.InteractiveServer
-@inject DbSchemaExplorer.DataAcess.AppDbContext DbContext
+@inherits TableEditBase
 
 <h3>📄 Table Documentation</h3>
 
@@ -44,78 +44,47 @@ else
             </div>
             <button class="btn btn-success">💾 Save</button>
         </EditForm>
+
+        @if (Columns.Any())
+        {
+            <h5 class="mt-4">📋 Columns in <b>@SelectedTable</b>:</h5>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Data Type</th>
+                        <th>Key Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var col in Columns)
+                    {
+                        <tr>
+                            <td>@col.Name</td>
+                            <td>@col.DataType</td>
+                            <td>
+                                @if (col.IsPrimaryKey)
+                                {
+                                    <span title="Primary Key">🔑 Primary</span>
+                                }
+                                else if (col.IsForeignKey)
+                                {
+                                    <span title="Foreign Key">🔗 Foreign</span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
     }
 }
 
 @if (!string.IsNullOrEmpty(StatusMessage))
 {
     <div class="alert alert-info mt-2">@StatusMessage</div>
-}
-
-@code {
-    string ServerName = "localhost";
-    string DatabaseName = "";
-    string Password = "";
-    bool IsConnected = false;
-    List<string> Tables = new();
-    string SelectedTable = "";
-    TableDocumentation CurrentDocumentation = new();
-    string StatusMessage = "";
-
-    public async Task ConnectToMySQL()
-    {
-        try
-        {
-            StatusMessage = "🚀 Trying to connect...";
-            var connString = $"Server={ServerName};Port=3306;Database={DatabaseName};Uid=blazoruser;Pwd={Password};";
-
-            using var conn = new MySql.Data.MySqlClient.MySqlConnection(connString);
-            await conn.OpenAsync();
-
-            using var cmd = new MySql.Data.MySqlClient.MySqlCommand("SHOW TABLES;", conn);
-            using var reader = await cmd.ExecuteReaderAsync();
-            Tables.Clear();
-
-            while (await reader.ReadAsync())
-                Tables.Add(reader.GetString(0));
-
-            IsConnected = true;
-            StatusMessage = $"✅ Connected! {Tables.Count} tables found.";
-        }
-        catch (Exception ex)
-        {
-            IsConnected = false;
-            StatusMessage = $"❌ Connection failed: {ex.Message}";
-        }
-    }
-
-    private async Task HandleTableChange()
-    {
-        await LoadTableDocumentation();
-    }
-
-    async Task LoadTableDocumentation()
-    {
-        CurrentDocumentation = DbContext.TableDocumentations
-            .FirstOrDefault(d => d.TableName == SelectedTable && d.DatabaseName == DatabaseName)
-            ?? new TableDocumentation { TableName = SelectedTable, DatabaseName = DatabaseName };
-    }
-
-    async Task SaveDocumentation()
-    {
-        var existing = DbContext.TableDocumentations
-            .FirstOrDefault(d => d.TableName == SelectedTable && d.DatabaseName == DatabaseName);
-
-        if (existing != null)
-        {
-            existing.Notes = CurrentDocumentation.Notes;
-        }
-        else
-        {
-            await DbContext.TableDocumentations.AddAsync(CurrentDocumentation);
-        }
-
-        await DbContext.SaveChangesAsync();
-        StatusMessage = "✅ Table notes saved successfully!";
-    }
 }
