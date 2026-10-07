@@ -1,12 +1,13 @@
 ﻿using DbSchemaExplorer.DataAcess;
 using DbSchemaExplorer.Models;
-            using Microsoft.AspNetCore.Components;
-            using Microsoft.Data.SqlClient;
-            using Microsoft.JSInterop;
+using DbSchemaExplorer.Services;
+using Microsoft.AspNetCore.Components;
+using Microsoft.Data.SqlClient;
+using Microsoft.JSInterop;
 using MySql.Data.MySqlClient;
 using System.Data;
-            using System.Net;
-            using System.Text;
+using System.Net;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -48,11 +49,19 @@ namespace DbSchemaExplorer.Pages
             Relationships.Clear();
             ShowRelationships = false;
 
+            var guardError = await ConnectionGuard.ValidateAsync(ServerName, SelectedDbType);
+            if (guardError != null)
+            {
+                ResultMessage = $"❌ {guardError}";
+                IsSuccess = false;
+                return;
+            }
+
             try
             {
                 if (SelectedDbType == "sql")
                 {
-                    var connectionString = $"Server={ServerName};Database={DatabaseName};Integrated Security=True;TrustServerCertificate=True;";
+                    var connectionString = $"Server={ServerName};Database={DatabaseName};Integrated Security=True;TrustServerCertificate=True;Connect Timeout=5;";
                     using SqlConnection connection = new(connectionString);
                     await connection.OpenAsync();
 
@@ -68,7 +77,7 @@ namespace DbSchemaExplorer.Pages
                 }
                 else if (SelectedDbType == "mysql")
                 {
-                    var connectionString = $"Server={ServerName};Port=3306;Database={DatabaseName};Uid=root;Pwd={MySqlPassword};";
+                    var connectionString = $"Server={ServerName};Port=3306;Database={DatabaseName};Uid=root;Pwd={MySqlPassword};Connection Timeout=5;";
                     using var connection = new MySqlConnection(connectionString);
                     await connection.OpenAsync();
 
@@ -123,7 +132,7 @@ namespace DbSchemaExplorer.Pages
             {
                 if (SelectedDbType == "sql")
                 {
-                    var connectionString = $"Server={ServerName};Database={DatabaseName};Integrated Security=True;TrustServerCertificate=True;";
+                    var connectionString = $"Server={ServerName};Database={DatabaseName};Integrated Security=True;TrustServerCertificate=True;Connect Timeout=5;";
                     using SqlConnection connection = new(connectionString);
                     await connection.OpenAsync();
 
@@ -187,7 +196,7 @@ namespace DbSchemaExplorer.Pages
                 }
                 else if (SelectedDbType == "mysql")
                 {
-                    var connectionString = $"Server={ServerName};Port=3306;Database={DatabaseName};Uid=root;Pwd={MySqlPassword};";
+                    var connectionString = $"Server={ServerName};Port=3306;Database={DatabaseName};Uid=root;Pwd={MySqlPassword};Connection Timeout=5;";
                     using var connection = new MySqlConnection(connectionString);
                     await connection.OpenAsync();
 
@@ -264,7 +273,7 @@ namespace DbSchemaExplorer.Pages
                         {
                             if (SelectedDbType == "sql")
                             {
-                                var connectionString = $"Server={ServerName};Database={DatabaseName};Integrated Security=True;TrustServerCertificate=True;";
+                                var connectionString = $"Server={ServerName};Database={DatabaseName};Integrated Security=True;TrustServerCertificate=True;Connect Timeout=5;";
                                 using SqlConnection connection = new(connectionString);
                                 await connection.OpenAsync();
 
@@ -293,7 +302,7 @@ namespace DbSchemaExplorer.Pages
                             }
                             else if (SelectedDbType == "mysql")
                             {
-                                var connectionString = $"Server={ServerName};Port=3306;Database={DatabaseName};Uid=root;Pwd={MySqlPassword};";
+                                var connectionString = $"Server={ServerName};Port=3306;Database={DatabaseName};Uid=root;Pwd={MySqlPassword};Connection Timeout=5;";
                                 using var connection = new MySqlConnection(connectionString);
                                 await connection.OpenAsync();
 
