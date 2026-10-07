@@ -8,6 +8,13 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__MySqlConnection=${DBEXPLORER_MYSQL_CONNECTION}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - smarttracker_net
     restart: unless-stopped
+
+networks:
+  default:
+  smarttracker_net:
+    external: true
+    name: customer-deploy_default
