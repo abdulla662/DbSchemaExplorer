@@ -8,4 +8,6 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__MySqlConnection=${DBEXPLORER_MYSQL_CONNECTION}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
